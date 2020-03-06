@@ -1,65 +1,95 @@
 <style lang="less">
+@import "../../../styles/table-common.less";
 @import "./logManage.less";
 </style>
 <template>
   <div class="search">
-    <Row>
-      <Col>
-        <Card>
-          <Tabs :animated="false" @on-click="changeTab">
-            <TabPane label="登陆日志" name="login">
-            </TabPane>
-            <TabPane label="操作日志" name="operation">
-            </TabPane>
-          </Tabs>
-          <Form ref="searchForm" :model="searchForm" inline :label-width="70" class="search-form">
-            <Form-item label="搜索日志">
-              <Input type="text" v-model="searchKey" clearable placeholder="请输入搜索关键词" style="width: 200px"/>
-            </Form-item>
-            <Form-item label="创建时间">
-              <DatePicker type="daterange" v-model="selectDate" format="yyyy-MM-dd" clearable @on-change="selectDateRange" placeholder="选择起始时间" style="width: 200px"></DatePicker>
-            </Form-item>
-            <Form-item style="margin-left:-35px;" class="br">
-              <Button @click="handleSearch"  type="primary" icon="ios-search">搜索</Button>
-              <Button @click="handleReset" >重置</Button>
-            </Form-item>
-          </Form>
-          <Row class="operation">
-            <Button @click="clearAll" type="error" icon="md-trash">清空全部</Button>
-            <Button @click="delAll" icon="md-trash">批量删除</Button>
-            <Button @click="getLogList" icon="md-refresh">刷新</Button>
-            <circleLoading v-if="operationLoading"/>
-          </Row>
-          <Row>
-            <Alert show-icon>
-              已选择 <span class="select-count">{{selectCount}}</span> 项
-              <a class="select-clear" @click="clearSelectAll">清空</a>
-            </Alert>
-          </Row>
-          <Row>
-            <Table :loading="loading" border :columns="columns" :data="data" ref="table" sortable="custom" @on-sort-change="changeSort" @on-selection-change="changeSelect"></Table>
-          </Row>
-          <Row type="flex" justify="end" class="page">
-            <Page :current="searchForm.pageNumber" :total="total" :page-size="searchForm.pageSize" @on-change="changePage" @on-page-size-change="changePageSize" :page-size-opts="[10,20,50]" size="small" show-total show-elevator show-sizer></Page>
-          </Row>
-        </Card>
-      </Col>
-    </Row>
+    <Card>
+      <Tabs :animated="false" @on-click="changeTab">
+        <TabPane label="登陆日志" name="1"></TabPane>
+        <TabPane label="操作日志" name="0"></TabPane>
+      </Tabs>
+      <Row v-show="openSearch" @keydown.enter.native="handleSearch">
+        <Form ref="searchForm" :model="searchForm" inline :label-width="70">
+          <Form-item label="搜索日志">
+            <Input
+              type="text"
+              v-model="searchKey"
+              clearable
+              placeholder="请输入搜索关键词"
+              style="width: 200px"
+            />
+          </Form-item>
+          <Form-item label="创建时间">
+            <DatePicker
+              type="daterange"
+              v-model="selectDate"
+              format="yyyy-MM-dd"
+              clearable
+              @on-change="selectDateRange"
+              placeholder="选择起始时间"
+              style="width: 200px"
+            ></DatePicker>
+          </Form-item>
+          <Form-item style="margin-left:-35px;" class="br">
+            <Button @click="handleSearch" type="primary" icon="ios-search">搜索</Button>
+            <Button @click="handleReset">重置</Button>
+          </Form-item>
+        </Form>
+      </Row>
+      <Row class="operation">
+        <Button @click="clearAll" type="error" icon="md-trash">清空全部</Button>
+        <Button @click="delAll" icon="md-trash">批量删除</Button>
+        <Button @click="getLogList" icon="md-refresh">刷新</Button>
+        <Button type="dashed" @click="openSearch=!openSearch">{{openSearch ? "关闭搜索" : "开启搜索"}}</Button>
+        <Button type="dashed" @click="openTip=!openTip">{{openTip ? "关闭提示" : "开启提示"}}</Button>
+      </Row>
+      <Row v-show="openTip">
+        <Alert>
+          已选择
+          <span class="select-count">{{selectCount}}</span> 项
+          <a class="select-clear" @click="clearSelectAll">清空</a>
+        </Alert>
+      </Row>
+      <Row>
+        <Table
+          :loading="loading"
+          border
+          :columns="columns"
+          :data="data"
+          ref="table"
+          sortable="custom"
+          @on-sort-change="changeSort"
+          @on-selection-change="changeSelect"
+        ></Table>
+      </Row>
+      <Row type="flex" justify="end" class="page">
+        <Page
+          :current="searchForm.pageNumber"
+          :total="total"
+          :page-size="searchForm.pageSize"
+          @on-change="changePage"
+          @on-page-size-change="changePageSize"
+          :page-size-opts="[10,20,50]"
+          size="small"
+          show-total
+          show-elevator
+          show-sizer
+        ></Page>
+      </Row>
+    </Card>
   </div>
 </template>
 
 <script>
 import { getLogListData, deleteLog, deleteAllLog } from "@/api/index";
-import circleLoading from "@/views/my-components/circle-loading.vue";
 export default {
-  name: "role-manage",
-  components: {
-    circleLoading
-  },
+  name: "log-manage",
   data() {
     return {
+      openSearch: true,
+      openTip: true,
       loading: true,
-      operationLoading: false,
       selectList: [],
       selectCount: 0,
       selectDate: null,
@@ -89,14 +119,14 @@ export default {
         {
           title: "操作名称",
           key: "name",
-          width: 110,
+          width: 115,
           sortable: true,
           fixed: "left"
         },
         {
           title: "请求类型",
           key: "requestType",
-          width: 120,
+          width: 130,
           align: "center",
           sortable: true,
           filters: [
@@ -119,14 +149,14 @@ export default {
           ],
           filterMultiple: false,
           filterMethod(value, row) {
-            if (value === "GET") {
-              return row.requestType === "GET";
-            } else if (value === "POST") {
-              return row.requestType === "POST";
-            } else if (value === "PUT") {
-              return row.requestType === "PUT";
-            } else if (value === "DELETE") {
-              return row.requestType === "DELETE";
+            if (value == "GET") {
+              return row.requestType == "GET";
+            } else if (value == "POST") {
+              return row.requestType == "POST";
+            } else if (value == "PUT") {
+              return row.requestType == "PUT";
+            } else if (value == "DELETE") {
+              return row.requestType == "DELETE";
             }
           }
         },
@@ -144,25 +174,25 @@ export default {
         {
           title: "登录用户",
           key: "username",
-          width: 105,
+          minWidth: 120,
           sortable: true
         },
         {
           title: "IP",
           key: "ip",
-          width: 120,
+          width: 150,
           sortable: true
         },
         {
           title: "IP信息",
           key: "ipInfo",
-          width: 100,
+          width: 190,
           sortable: true
         },
         {
           title: "耗时(毫秒)",
           key: "costTime",
-          width: 130,
+          width: 140,
           sortable: true,
           align: "center",
           filters: [
@@ -177,9 +207,9 @@ export default {
           ],
           filterMultiple: false,
           filterMethod(value, row) {
-            if (value === 0) {
+            if (value == 0) {
               return row.costTime <= 1000;
-            } else if (value === 1) {
+            } else if (value == 1) {
               return row.costTime > 1000;
             }
           }
@@ -221,7 +251,7 @@ export default {
           title: "创建时间",
           key: "createTime",
           sortable: true,
-          width: 150,
+          width: 170,
           sortType: "desc"
         },
         {
@@ -260,11 +290,7 @@ export default {
       this.getLogList();
     },
     changeTab(v) {
-      if (v == "login") {
-        this.searchForm.type = 1;
-      } else if (v == "operation") {
-        this.searchForm.type = 0;
-      }
+      this.searchForm.type = v;
       this.getLogList();
     },
     changePage(v) {
@@ -292,7 +318,7 @@ export default {
       this.searchForm.key = this.searchKey;
       getLogListData(this.searchForm).then(res => {
         this.loading = false;
-        if (res.success === true) {
+        if (res.success) {
           this.data = res.result.content;
           this.total = res.result.totalElements;
         }
@@ -309,11 +335,11 @@ export default {
       this.$Modal.confirm({
         title: "确认删除",
         content: "您确认要删除该条数据?",
+        loading: true,
         onOk: () => {
-          this.operationLoading = true;
           deleteLog(v.id).then(res => {
-            this.operationLoading = false;
-            if (res.success === true) {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("删除成功");
               this.init();
             }
@@ -331,7 +357,7 @@ export default {
     changeSort(e) {
       this.searchForm.sort = e.key;
       this.searchForm.order = e.order;
-      if (e.order === "normal") {
+      if (e.order == "normal") {
         this.searchForm.order = "";
       }
       this.getLogList();
@@ -344,16 +370,16 @@ export default {
       this.$Modal.confirm({
         title: "确认删除",
         content: "您确认要删除所选的 " + this.selectCount + " 条数据?",
+        loading: true,
         onOk: () => {
           let ids = "";
           this.selectList.forEach(function(e) {
             ids += e.id + ",";
           });
           ids = ids.substring(0, ids.length - 1);
-          this.operationLoading = true;
           deleteLog(ids).then(res => {
-            this.operationLoading = false;
-            if (res.success === true) {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("删除成功");
               this.clearSelectAll();
               this.init();
@@ -375,7 +401,7 @@ export default {
           ids = ids.substring(0, ids.length - 1);
           deleteAllLog().then(res => {
             this.loading = false;
-            if (res.success === true) {
+            if (res.success) {
               this.$Message.success("清空日志成功");
               this.clearSelectAll();
               this.init();

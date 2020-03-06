@@ -1,4 +1,5 @@
 <style lang="less">
+@import "../../../styles/tree-common.less";
 @import "./departmentManage.less";
 </style>
 <template>
@@ -14,8 +15,8 @@
           <span slot="close">单选</span>
         </i-switch>
       </Row>
-      <Row type="flex" justify="start" class="code-row-bg">
-        <Col span="6">
+      <Row type="flex" justify="start">
+        <Col :md="8" :lg="8" :xl="6">
           <Alert show-icon>
             当前选择编辑：
             <span class="select-title">{{editTitle}}</span>
@@ -38,22 +39,25 @@
               @on-select-change="selectTree"
               :check-strictly="!strict"
             ></Tree>
+            <Spin size="large" fix v-if="loading"></Spin>
           </div>
-          <Spin size="large" fix v-if="loading"></Spin>
         </Col>
-        <Col span="9">
-          <Form ref="form" :model="form" :label-width="85" :rules="formValidate">
+        <Col :md="15" :lg="13" :xl="9" style="margin-left:10px;">
+          <Form ref="form" :model="form" :label-width="100" :rules="formValidate">
             <FormItem label="上级部门" prop="parentTitle">
-              <Poptip trigger="click" placement="right-start" title="选择上级部门" width="250">
-                <Input v-model="form.parentTitle" readonly style="width:400px"/>
-                <div slot="content" style="position:relative;min-height:5vh">
-                  <Tree :data="dataEdit" :load-data="loadData" @on-select-change="selectTreeEdit"></Tree>
-                  <Spin size="large" fix v-if="loadingEdit"></Spin>
-                </div>
-              </Poptip>
+              <div style="display:flex;">
+                <Input v-model="form.parentTitle" readonly style="margin-right:10px;" />
+                <Poptip transfer trigger="click" placement="right-start" title="选择上级部门" width="250">
+                  <Button icon="md-list">选择部门</Button>
+                  <div slot="content" style="position:relative;min-height:5vh">
+                    <Tree :data="dataEdit" :load-data="loadData" @on-select-change="selectTreeEdit"></Tree>
+                    <Spin size="large" fix v-if="loadingEdit"></Spin>
+                  </div>
+                </Poptip>
+              </div>
             </FormItem>
             <FormItem label="部门名称" prop="title">
-              <Input v-model="form.title" style="width:400px"/>
+              <Input v-model="form.title" />
             </FormItem>
             <FormItem label="部门负责人" prop="mainHeader">
               <Select
@@ -61,7 +65,6 @@
                 not-found-text="该部门暂无用户数据"
                 v-model="form.mainHeader"
                 multiple
-                style="width:400px"
               >
                 <Option v-for="item in users" :value="item.id" :key="item.id">{{ item.username }}</Option>
               </Select>
@@ -72,25 +75,19 @@
                 not-found-text="该部门暂无用户数据"
                 v-model="form.viceHeader"
                 multiple
-                style="width:400px"
               >
                 <Option v-for="item in users" :value="item.id" :key="item.id">{{ item.username }}</Option>
               </Select>
             </FormItem>
             <FormItem label="排序值" prop="sortOrder">
-              <InputNumber :max="1000" :min="0" v-model="form.sortOrder"></InputNumber>
-              <span style="margin-left:5px">值越小越靠前，支持小数</span>
+              <Tooltip trigger="hover" placement="right" content="值越小越靠前，支持小数">
+                <InputNumber :max="1000" :min="0" v-model="form.sortOrder"></InputNumber>
+              </Tooltip>
             </FormItem>
             <FormItem label="是否启用" prop="status">
               <i-switch size="large" v-model="form.status" :true-value="0" :false-value="-1">
                 <span slot="open">启用</span>
                 <span slot="close">禁用</span>
-              </i-switch>
-            </FormItem>
-            <FormItem label="是否为父节点">
-              <i-switch v-model="form.isParent">
-                <span slot="open">是</span>
-                <span slot="close">否</span>
               </i-switch>
             </FormItem>
             <Form-item>
@@ -114,11 +111,12 @@
           <FormItem label="上级部门：">{{form.title}}</FormItem>
         </div>
         <FormItem label="部门名称" prop="title">
-          <Input v-model="formAdd.title"/>
+          <Input v-model="formAdd.title" />
         </FormItem>
         <FormItem label="排序值" prop="sortOrder">
-          <InputNumber :max="1000" :min="0" v-model="formAdd.sortOrder"></InputNumber>
-          <span style="margin-left:5px">值越小越靠前，支持小数</span>
+          <Tooltip trigger="hover" placement="right" content="值越小越靠前，支持小数">
+            <InputNumber :max="1000" :min="0" v-model="formAdd.sortOrder"></InputNumber>
+          </Tooltip>
         </FormItem>
         <FormItem label="是否启用" prop="status">
           <i-switch size="large" v-model="formAdd.status" :true-value="0" :false-value="-1">
@@ -171,7 +169,15 @@ export default {
       },
       formAdd: {},
       formValidate: {
-        title: [{ required: true, message: "名称不能为空", trigger: "blur" }]
+        title: [{ required: true, message: "名称不能为空", trigger: "blur" }],
+        sortOrder: [
+          {
+            required: true,
+            type: "number",
+            message: "排序值不能为空",
+            trigger: "blur"
+          }
+        ]
       },
       submitLoading: false,
       data: [],
@@ -188,7 +194,7 @@ export default {
       this.loading = true;
       initDepartment().then(res => {
         this.loading = false;
-        if (res.success === true) {
+        if (res.success) {
           res.result.forEach(function(e) {
             if (e.isParent) {
               e.loading = false;
@@ -203,7 +209,7 @@ export default {
       this.loadingEdit = true;
       initDepartment().then(res => {
         this.loadingEdit = false;
-        if (res.success === true) {
+        if (res.success) {
           res.result.forEach(function(e) {
             if (e.isParent) {
               e.loading = false;
@@ -222,7 +228,7 @@ export default {
     },
     loadData(item, callback) {
       loadDepartment(item.id).then(res => {
-        if (res.success === true) {
+        if (res.success) {
           res.result.forEach(function(e) {
             if (e.isParent) {
               e.loading = false;
@@ -250,7 +256,7 @@ export default {
       if (v.length > 0) {
         // 转换null为""
         for (let attr in v[0]) {
-          if (v[0][attr] === null) {
+          if (v[0][attr] == null) {
             v[0][attr] = "";
           }
         }
@@ -263,10 +269,10 @@ export default {
           this.userLoading = false;
           if (res.success) {
             this.users = res.result;
+            // 回显
+            this.form = data;
           }
         });
-        // 回显
-        this.form = data;
       } else {
         this.cancelEdit();
       }
@@ -284,7 +290,7 @@ export default {
       if (v.length > 0) {
         // 转换null为""
         for (let attr in v[0]) {
-          if (v[0][attr] === null) {
+          if (v[0][attr] == null) {
             v[0][attr] = "";
           }
         }
@@ -311,7 +317,7 @@ export default {
           this.submitLoading = true;
           editDepartment(this.form).then(res => {
             this.submitLoading = false;
-            if (res.success === true) {
+            if (res.success) {
               this.$Message.success("编辑成功");
               this.init();
               this.modalVisible = false;
@@ -326,7 +332,7 @@ export default {
           this.submitLoading = true;
           addDepartment(this.formAdd).then(res => {
             this.submitLoading = false;
-            if (res.success === true) {
+            if (res.success) {
               this.$Message.success("添加成功");
               this.init();
               this.modalVisible = false;
@@ -370,7 +376,9 @@ export default {
       }
       this.$Modal.confirm({
         title: "确认删除",
-        content: "您确认要删除所选的 " + this.selectCount + " 条数据?",
+        content:
+          "您确认要删除所选的 " + this.selectCount + " 条数据及其下级所有数据?",
+        loading: true,
         onOk: () => {
           let ids = "";
           this.selectList.forEach(function(e) {
@@ -378,7 +386,8 @@ export default {
           });
           ids = ids.substring(0, ids.length - 1);
           deleteDepartment(ids).then(res => {
-            if (res.success === true) {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("删除成功");
               this.selectList = [];
               this.selectCount = 0;

@@ -1,38 +1,45 @@
 <template>
   <div>
-    <Poptip trigger="hover" title="图片预览" placement="right" width="350">
+    <div style="display:flex;">
       <Input
-        v-model="picUrl"
+        v-model="currentValue"
         @on-change="handleChange"
-        placeholder="可直接填入网络图片链接"
-        :style="{width: width}"
-        clearable
-      />
-      <div slot="content">
-        <img :src="picUrl" alt="无效的图片链接" style="width: 100%;margin: 0 auto;display: block;">
-        <a @click="viewImage=true" style="margin-top:5px;text-align:right;display:block">查看大图</a>
-      </div>
-    </Poptip>
-    <Upload
-      :action="uploadFileUrl"
-      :headers="accessToken"
-      :on-success="handleSuccess"
-      :on-error="handleError"
-      :format="['jpg','jpeg','png','gif','bmp']"
-      accept=".jpg, .jpeg, .png, .gif, .bmp"
-      :max-size="5120"
-      :on-format-error="handleFormatError"
-      :on-exceeded-size="handleMaxSize"
-      :before-upload="beforeUpload"
-      :show-upload-list="false"
-      ref="up"
-      class="upload"
-    >
-      <Button :loading="loading" icon="ios-cloud-upload-outline">上传图片</Button>
-    </Upload>
+        :placeholder="placeholder"
+        :size="size"
+        :disabled="disabled"
+        :readonly="readonly"
+        :maxlength="maxlength"
+      >
+        <Button slot="append" icon="md-eye"></Button>
+      </Input>
+      <Poptip transfer trigger="hover" title="图片预览" placement="right" width="350">
+        <Icon type="md-eye" class="see-icon" />
+        <div slot="content">
+          <img :src="currentValue" alt="无效的图片链接" style="width: 100%;margin: 0 auto;display: block;" />
+          <a @click="viewImage=true" style="margin-top:5px;text-align:right;display:block">查看大图</a>
+        </div>
+      </Poptip>
+      <Upload
+        :action="uploadFileUrl"
+        :headers="accessToken"
+        :on-success="handleSuccess"
+        :on-error="handleError"
+        :format="['jpg','jpeg','png','gif','bmp']"
+        accept=".jpg, .jpeg, .png, .gif, .bmp"
+        :max-size="maxSize*1024"
+        :on-format-error="handleFormatError"
+        :on-exceeded-size="handleMaxSize"
+        :before-upload="beforeUpload"
+        :show-upload-list="false"
+        ref="up"
+        class="upload"
+      >
+        <Button :loading="loading" :size="size" :disabled="disabled" :icon="icon">上传图片</Button>
+      </Upload>
+    </div>
 
     <Modal title="图片预览" v-model="viewImage" :styles="{top: '30px'}" draggable>
-      <img :src="picUrl" alt="无效的图片链接" style="width: 100%;margin: 0 auto;display: block;">
+      <img :src="currentValue" alt="无效的图片链接" style="width: 100%;margin: 0 auto;display: block;" />
       <div slot="footer">
         <Button @click="viewImage=false">关闭</Button>
       </div>
@@ -45,15 +52,34 @@ import { uploadFile } from "@/api/index";
 export default {
   name: "uploadPicInput",
   props: {
-    width: {
+    value: String,
+    size: String,
+    placeholder: {
       type: String,
-      default: "200px"
+      default: "可输入图片链接"
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    },
+    readonly: {
+      type: Boolean,
+      default: false
+    },
+    maxSize: {
+      type: Number,
+      default: 5
+    },
+    maxlength: Number,
+    icon: {
+      type: String,
+      default: "ios-cloud-upload-outline"
     }
   },
   data() {
     return {
       accessToken: {},
-      picUrl: "",
+      currentValue: this.value,
       loading: false,
       viewImage: false,
       uploadFileUrl: uploadFile
@@ -79,7 +105,7 @@ export default {
       this.loading = false;
       this.$Notice.warning({
         title: "文件大小过大",
-        desc: "所选文件‘ " + file.name + " ’大小过大, 不得超过 5M."
+        desc: "所选文件‘ " + file.name + " ’大小过大, 不得超过 " + this.maxSize + "M."
       });
     },
     beforeUpload() {
@@ -88,10 +114,10 @@ export default {
     },
     handleSuccess(res, file) {
       this.loading = false;
-      if (res.success === true) {
-        file.url = res.result;
-        this.picUrl = res.result;
-        this.$emit("on-change", this.picUrl);
+      if (res.success) {
+        this.currentValue = res.result;
+        this.$emit("input", this.currentValue);
+        this.$emit("on-change", this.currentValue);
       } else {
         this.$Message.error(res.message);
       }
@@ -101,11 +127,20 @@ export default {
       this.$Message.error(error.toString());
     },
     handleChange(v) {
-      this.$emit("on-change", this.picUrl);
+      this.$emit("input", this.currentValue);
+      this.$emit("on-change", this.currentValue);
     },
-    setPicUrl(v) {
-      this.picUrl = v;
-      this.$emit("on-change", this.picUrl);
+    setCurrentValue(value) {
+      if (value === this.currentValue) {
+        return;
+      }
+      this.currentValue = value;
+      this.$emit("on-change", this.currentValue);
+    }
+  },
+  watch: {
+    value(val) {
+      this.setCurrentValue(val);
     }
   },
   created() {
@@ -115,6 +150,14 @@ export default {
 </script>
 
 <style lang="less">
+.see-icon {
+  font-size: 16px;
+  margin-left: -32px;
+  margin-top: 3px;
+  padding: 7px;
+  cursor: pointer;
+}
+
 .upload {
   display: inline-block;
   margin-left: 10px;

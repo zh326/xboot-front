@@ -1,16 +1,18 @@
 <style lang="less">
+@import "../../../styles/tree&table-common.less";
 @import "./dictManage.less";
 </style>
 <template>
   <div class="search">
     <Card>
-      <Row type="flex" justify="space-between" class="code-row-bg">
+      <Row type="flex" justify="space-between">
         <Col v-if="expand" span="5">
           <Row class="operation">
             <Button @click="addDcit" type="primary" icon="md-add">添加字典</Button>
             <Dropdown @on-click="handleDropdown">
-              <Button>更多操作
-                <Icon type="md-arrow-dropdown"/>
+              <Button>
+                更多操作
+                <Icon type="md-arrow-dropdown" />
               </Button>
               <DropdownMenu slot="list">
                 <DropdownItem name="editDcit">编辑字典</DropdownItem>
@@ -33,15 +35,15 @@
           />
           <div class="tree-bar" :style="{maxHeight: maxHeight}">
             <Tree ref="tree" :data="treeData" @on-select-change="selectTree"></Tree>
+            <Spin size="large" fix v-if="treeLoading"></Spin>
           </div>
-          <Spin size="large" fix v-if="treeLoading"></Spin>
         </Col>
         <div class="expand">
-          <Icon :type="expandIcon" size="16" class="icon" @click="changeExpand"/>
+          <Icon :type="expandIcon" size="16" class="icon" @click="changeExpand" />
         </div>
         <Col :span="span">
-          <Row>
-            <Form ref="searchForm" :model="searchForm" inline :label-width="60" class="search-form">
+          <Row v-show="openSearch" @keydown.enter.native="handleSearch">
+            <Form ref="searchForm" :model="searchForm" inline :label-width="70">
               <Form-item label="数据名称" prop="title">
                 <Input
                   type="text"
@@ -72,9 +74,10 @@
             <Button @click="add" type="primary" icon="md-add">添加数据</Button>
             <Button @click="delAll" icon="md-trash">批量删除</Button>
             <Button @click="getDataList" icon="md-refresh">刷新数据</Button>
-            <circleLoading v-if="operationLoading"/>
+            <Button type="dashed" @click="openSearch=!openSearch">{{openSearch ? "关闭搜索" : "开启搜索"}}</Button>
+            <Button type="dashed" @click="openTip=!openTip">{{openTip ? "关闭提示" : "开启提示"}}</Button>
           </Row>
-          <Row>
+          <Row v-show="openTip">
             <Alert show-icon>
               已选择
               <span class="select-count">{{selectCount}}</span> 项
@@ -111,28 +114,23 @@
       </Row>
     </Card>
 
-    <Modal
-      :title="dictModalTitle"
-      v-model="dictModalVisible"
-      :mask-closable="false"
-      :width="500"
-      :styles="{top: '30px'}"
-    >
-      <Form ref="dictForm" :model="dictForm" :label-width="75" :rules="dictFormValidate">
+    <Modal :title="dictModalTitle" v-model="dictModalVisible" :mask-closable="false" :width="500">
+      <Form ref="dictForm" :model="dictForm" :label-width="85" :rules="dictFormValidate">
         <FormItem label="字典名称" prop="title">
-          <Input v-model="dictForm.title"/>
+          <Input v-model="dictForm.title" />
         </FormItem>
-        <FormItem label="字典类型" prop="type">
+        <FormItem label="字典类型" prop="type" class="block-tool">
           <Tooltip placement="right" :max-width="220" transfer content="建议英文名且需唯一 非开发人员谨慎修改">
-            <Input v-model="dictForm.type" style="width:395px"/>
+            <Input v-model="dictForm.type" />
           </Tooltip>
         </FormItem>
         <FormItem label="备注" prop="description">
-          <Input v-model="dictForm.description"/>
+          <Input v-model="dictForm.description" />
         </FormItem>
         <FormItem label="排序值" prop="sortOrder">
-          <InputNumber :max="1000" :min="0" v-model="dictForm.sortOrder"></InputNumber>
-          <span style="margin-left:5px">值越小越靠前，支持小数</span>
+          <Tooltip trigger="hover" placement="right" content="值越小越靠前，支持小数">
+            <InputNumber :max="1000" :min="0" v-model="dictForm.sortOrder"></InputNumber>
+          </Tooltip>
         </FormItem>
       </Form>
       <div slot="footer">
@@ -141,26 +139,21 @@
       </div>
     </Modal>
 
-    <Modal
-      :title="modalTitle"
-      v-model="modalVisible"
-      :mask-closable="false"
-      :width="500"
-      :styles="{top: '30px'}"
-    >
-      <Form ref="form" :model="form" :label-width="70" :rules="formValidate">
+    <Modal :title="modalTitle" v-model="modalVisible" :mask-closable="false" :width="500">
+      <Form ref="form" :model="form" :label-width="80" :rules="formValidate">
         <FormItem label="名称" prop="title">
-          <Input v-model="form.title"/>
+          <Input v-model="form.title" />
         </FormItem>
         <FormItem label="数据值" prop="value">
-          <Input v-model="form.value"/>
+          <Input v-model="form.value" />
         </FormItem>
         <FormItem label="备注" prop="description">
-          <Input v-model="form.description"/>
+          <Input v-model="form.description" />
         </FormItem>
         <FormItem label="排序值" prop="sortOrder">
-          <InputNumber :max="1000" :min="0" v-model="form.sortOrder"></InputNumber>
-          <span style="margin-left:5px">值越小越靠前，支持小数</span>
+          <Tooltip trigger="hover" placement="right" content="值越小越靠前，支持小数">
+            <InputNumber :max="1000" :min="0" v-model="form.sortOrder"></InputNumber>
+          </Tooltip>
         </FormItem>
         <FormItem label="是否启用" prop="status">
           <i-switch size="large" v-model="form.status" :true-value="0" :false-value="-1">
@@ -189,14 +182,12 @@ import {
   editDictData,
   deleteData
 } from "@/api/index";
-import circleLoading from "@/views/my-components/circle-loading.vue";
 export default {
   name: "dic-manage",
-  components: {
-    circleLoading
-  },
   data() {
     return {
+      openSearch: true,
+      openTip: true,
       treeLoading: false, // 树加载状态
       maxHeight: "500px",
       loading: false, // 表格加载状态
@@ -207,7 +198,6 @@ export default {
       expandIcon: "ios-arrow-back",
       selectNode: {},
       treeData: [], // 树数据
-      operationLoading: false, // 操作加载状态
       selectCount: 0, // 多选计数
       selectList: [], // 多选数据
       searchForm: {
@@ -241,12 +231,28 @@ export default {
       dictFormValidate: {
         // 表单验证规则
         title: [{ required: true, message: "不能为空", trigger: "blur" }],
-        type: [{ required: true, message: "不能为空", trigger: "blur" }]
+        type: [{ required: true, message: "不能为空", trigger: "blur" }],
+        sortOrder: [
+          {
+            required: true,
+            type: "number",
+            message: "排序值不能为空",
+            trigger: "blur"
+          }
+        ]
       },
       formValidate: {
         // 表单验证规则
         title: [{ required: true, message: "不能为空", trigger: "blur" }],
-        value: [{ required: true, message: "不能为空", trigger: "blur" }]
+        value: [{ required: true, message: "不能为空", trigger: "blur" }],
+        sortOrder: [
+          {
+            required: true,
+            type: "number",
+            message: "排序值不能为空",
+            trigger: "blur"
+          }
+        ]
       },
       columns: [
         // 表头
@@ -292,29 +298,23 @@ export default {
           width: 130,
           render: (h, params) => {
             let re = "";
-            if (params.row.status === 0) {
+            if (params.row.status == 0) {
               return h("div", [
-                h(
-                  "Tag",
-                  {
-                    props: {
-                      color: "green"
-                    }
-                  },
-                  "正常启用"
-                )
+                h("Badge", {
+                  props: {
+                    status: "success",
+                    text: "正常启用"
+                  }
+                })
               ]);
-            } else if (params.row.status === -1) {
+            } else if (params.row.status == -1) {
               return h("div", [
-                h(
-                  "Tag",
-                  {
-                    props: {
-                      color: "red"
-                    }
-                  },
-                  "禁用"
-                )
+                h("Badge", {
+                  props: {
+                    status: "error",
+                    text: "禁用"
+                  }
+                })
               ]);
             }
           }
@@ -386,7 +386,7 @@ export default {
       this.treeLoading = true;
       getAllDictList().then(res => {
         this.treeLoading = false;
-        if (res.success === true) {
+        if (res.success) {
           this.treeData = res.result;
         }
       });
@@ -397,7 +397,7 @@ export default {
         this.treeLoading = true;
         searchDict({ key: this.searchKey }).then(res => {
           this.treeLoading = false;
-          if (res.success === true) {
+          if (res.success) {
             this.treeData = res.result;
           }
         });
@@ -408,9 +408,10 @@ export default {
     },
     selectTree(v) {
       if (v.length > 0) {
+        this.$refs.dictForm.resetFields();
         // 转换null为""
         for (let attr in v[0]) {
-          if (v[0][attr] === null) {
+          if (v[0][attr] == null) {
             v[0][attr] = "";
           }
         }
@@ -472,7 +473,7 @@ export default {
       }
       getAllDictDataList(this.searchForm).then(res => {
         this.loading = false;
-        if (res.success === true) {
+        if (res.success) {
           this.data = res.result.content;
           this.total = res.result.totalElements;
         }
@@ -493,7 +494,7 @@ export default {
     changeSort(e) {
       this.searchForm.sort = e.key;
       this.searchForm.order = e.order;
-      if (e.order === "normal") {
+      if (e.order == "normal") {
         this.searchForm.order = "";
       }
       this.getDataList();
@@ -548,7 +549,7 @@ export default {
           // 删除
           deleteDict(this.selectNode.id).then(res => {
             this.$Modal.remove();
-            if (res.success === true) {
+            if (res.success) {
               this.$Message.success("操作成功");
               this.refreshDict();
             }
@@ -572,7 +573,7 @@ export default {
       this.$refs.form.resetFields();
       // 转换null为""
       for (let attr in v) {
-        if (v[attr] === null) {
+        if (v[attr] == null) {
           v[attr] = "";
         }
       }
@@ -585,22 +586,22 @@ export default {
       this.$refs.dictForm.validate(valid => {
         if (valid) {
           this.submitLoading = true;
-          if (this.modalType === 0) {
+          if (this.modalType == 0) {
             // 添加 避免编辑后传入id等数据 记得删除
             delete this.dictForm.id;
             addDict(this.dictForm).then(res => {
               this.submitLoading = false;
-              if (res.success === true) {
+              if (res.success) {
                 this.$Message.success("操作成功");
                 this.getAllDict();
                 this.dictModalVisible = false;
               }
             });
-          } else if (this.modalType === 1) {
+          } else if (this.modalType == 1) {
             // 编辑
             editDict(this.dictForm).then(res => {
               this.submitLoading = false;
-              if (res.success === true) {
+              if (res.success) {
                 this.$Message.success("操作成功");
                 this.getAllDict();
                 this.dictModalVisible = false;
@@ -614,23 +615,23 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           this.submitLoading = true;
-          if (this.modalType === 0) {
+          if (this.modalType == 0) {
             // 添加 避免编辑后传入id等数据 记得删除
             delete this.form.id;
             this.form.dictId = this.selectNode.id;
             addDictData(this.form).then(res => {
               this.submitLoading = false;
-              if (res.success === true) {
+              if (res.success) {
                 this.$Message.success("操作成功");
                 this.getDataList();
                 this.modalVisible = false;
               }
             });
-          } else if (this.modalType === 1) {
+          } else if (this.modalType == 1) {
             // 编辑
             editDictData(this.form).then(res => {
               this.submitLoading = false;
-              if (res.success === true) {
+              if (res.success) {
                 this.$Message.success("操作成功");
                 this.getDataList();
                 this.modalVisible = false;
@@ -644,12 +645,12 @@ export default {
       this.$Modal.confirm({
         title: "确认删除",
         content: "您确认要删除 " + v.title + " ?",
+        loading: true,
         onOk: () => {
           // 删除
-          this.operationLoading = true;
           deleteData(v.id).then(res => {
-            this.operationLoading = false;
-            if (res.success === true) {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("操作成功");
               this.getDataList();
             }
@@ -665,6 +666,7 @@ export default {
       this.$Modal.confirm({
         title: "确认删除",
         content: "您确认要删除所选的 " + this.selectCount + " 条数据?",
+        loading: true,
         onOk: () => {
           let ids = "";
           this.selectList.forEach(function(e) {
@@ -672,10 +674,9 @@ export default {
           });
           ids = ids.substring(0, ids.length - 1);
           // 批量删除
-          this.operationLoading = true;
           deleteData(ids).then(res => {
-            this.operationLoading = false;
-            if (res.success === true) {
+            this.$Modal.remove();
+            if (res.success) {
               this.$Message.success("操作成功");
               this.clearSelectAll();
               this.getDataList();
@@ -688,7 +689,7 @@ export default {
   mounted() {
     // 计算高度
     let height = document.documentElement.clientHeight;
-    this.maxHeight = Number(height-287) + "px";
+    this.maxHeight = Number(height - 287) + "px";
     this.init();
   }
 };

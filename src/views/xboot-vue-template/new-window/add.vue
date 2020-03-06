@@ -1,24 +1,25 @@
 <style lang="less">
 </style>
 <template>
-    <div class="search">
-      <Row>
-        <Card>     
-          <p slot="title">
-            添加
-          </p>
-          <Form ref="form" :model="form" :label-width="90" :rules="formValidate">
-            <FormItem label="名称" prop="name">
-              <Input v-model="form.name" style="width: 400px"/>
-            </FormItem>
-            <Form-item>
-              <Button @click="handleSubmit" :loading="submitLoading" type="primary" style="margin-right:5px">提交并保存</Button>
-              <Button @click="handleReset">重置</Button>
-            </Form-item>
-          </Form> 
-        </Card>
-      </Row>
-    </div>
+  <div>
+    <Card>
+      <p slot="title">添加</p>
+      <Form ref="form" :model="form" :label-width="90" :rules="formValidate">
+        <FormItem label="名称" prop="name">
+          <Input v-model="form.name" style="width: 400px" />
+        </FormItem>
+        <Form-item>
+          <Button
+            @click="handleSubmit"
+            :loading="submitLoading"
+            type="primary"
+            style="margin-right:5px"
+          >提交并保存</Button>
+          <Button @click="handleReset">重置</Button>
+        </Form-item>
+      </Form>
+    </Card>
+  </div>
 </template>
 
 <script>
@@ -51,7 +52,7 @@ export default {
         if (valid) {
           // this.postRequest("请求路径", this.form).then(res => {
           //   this.submitLoading = false;
-          //   if (res.success === true) {
+          //   if (res.success) {
           //     this.$Message.success("添加成功");
           //     this.closeCurrentPage();
           //   }
@@ -76,7 +77,7 @@ export default {
   },
   watch: {
     $route(to, from) {
-      if (to.name === "add") {
+      if (to.name == "add") {
         this.handleReset();
       }
     }

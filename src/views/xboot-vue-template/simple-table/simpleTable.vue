@@ -1,43 +1,62 @@
 <style lang="less">
-@import "./simpleTable.less";
+@import "../../../styles/table-common.less";
 </style>
 <template>
-    <div class="search">
-        <Row>
-            <Col>
-                <Card>     
-                    <Row class="operation">
-                        <Button @click="add" type="primary" icon="md-add">添加</Button>
-                        <Button @click="delAll" icon="md-trash">批量删除</Button>
-                        <Button @click="getDataList" icon="md-refresh">刷新</Button>
-                    </Row>
-                     <Row>
-                        <Alert show-icon>
-                            已选择 <span class="select-count">{{selectCount}}</span> 项
-                            <a class="select-clear" @click="clearSelectAll">清空</a> 这里还可以做一些数据统计显示
-                        </Alert>
-                    </Row>
-                    <Row>
-                        <Table :loading="loading" border :columns="columns" :data="data" ref="table" sortable="custom" @on-sort-change="changeSort" @on-selection-change="changeSelect"></Table>
-                    </Row>
-                    <Row type="flex" justify="end" class="page">
-                        <Page :current="pageNumber" :total="total" :page-size="pageSize" @on-change="changePage" @on-page-size-change="changePageSize" :page-size-opts="[10,20,50]" size="small" show-total show-elevator show-sizer></Page>
-                    </Row>
-                </Card>
-            </Col>
-        </Row>
-        <Modal :title="modalTitle" v-model="modalVisible" :mask-closable='false' :width="500">
-          <Form ref="form" :model="form" :label-width="80" :rules="formValidate">
-            <FormItem label="名称" prop="name">
-              <Input v-model="form.name"/>
-            </FormItem>
-          </Form>
-          <div slot="footer">
-            <Button type="text" @click="handleCancel">取消</Button>
-            <Button type="primary" :loading="submitLoading" @click="handleSubmit">提交</Button>
-          </div>
-        </Modal>
-    </div>
+  <div class="search">
+    <Card>
+      <Row class="operation">
+        <Button @click="add" type="primary" icon="md-add">添加</Button>
+        <Button @click="delAll" icon="md-trash">批量删除</Button>
+        <Button @click="getDataList" icon="md-refresh">刷新</Button>
+        <Button type="dashed" @click="openTip=!openTip">{{openTip ? "关闭提示" : "开启提示"}}</Button>
+      </Row>
+      <Row v-show="openTip">
+        <Alert show-icon>
+          已选择
+          <span class="select-count">{{selectCount}}</span> 项
+          <a class="select-clear" @click="clearSelectAll">清空</a> 这里还可以做一些数据统计显示
+        </Alert>
+      </Row>
+      <Row>
+        <Table
+          :loading="loading"
+          border
+          :columns="columns"
+          :data="data"
+          ref="table"
+          sortable="custom"
+          @on-sort-change="changeSort"
+          @on-selection-change="changeSelect"
+        ></Table>
+      </Row>
+      <Row type="flex" justify="end" class="page">
+        <Page
+          :current="searchForm.pageNumber"
+          :total="total"
+          :page-size="searchForm.pageSize"
+          @on-change="changePage"
+          @on-page-size-change="changePageSize"
+          :page-size-opts="[10,20,50]"
+          size="small"
+          show-total
+          show-elevator
+          show-sizer
+        ></Page>
+      </Row>
+    </Card>
+
+    <Modal :title="modalTitle" v-model="modalVisible" :mask-closable="false" :width="500">
+      <Form ref="form" :model="form" :label-width="80" :rules="formValidate">
+        <FormItem label="名称" prop="name">
+          <Input v-model="form.name" />
+        </FormItem>
+      </Form>
+      <div slot="footer">
+        <Button type="text" @click="handleCancel">取消</Button>
+        <Button type="primary" :loading="submitLoading" @click="handleSubmit">提交</Button>
+      </div>
+    </Modal>
+  </div>
 </template>
 
 <script>
@@ -45,9 +64,15 @@ export default {
   name: "simple-table",
   data() {
     return {
+      openTip: true, // 显示提示
       loading: true, // 表单加载状态
-      sortColumn: "createTime", // 排序字段
-      sortType: "desc", // 排序方式
+      searchForm: {
+        // 搜索框对应data对象
+        pageNumber: 1, // 当前页数
+        pageSize: 10, // 页面大小
+        sort: "createTime", // 默认排序字段
+        order: "desc" // 默认排序方式
+      },
       modalType: 0, // 添加或编辑标识
       modalVisible: false, // 添加或编辑显示
       modalTitle: "", // 添加或编辑标题
@@ -136,8 +161,6 @@ export default {
         }
       ],
       data: [], // 表单数据
-      pageNumber: 1, // 当前页数
-      pageSize: 10, // 页面大小
       total: 0 // 表单数据总数
     };
   },
@@ -146,34 +169,28 @@ export default {
       this.getDataList();
     },
     changePage(v) {
-      this.pageNumber = v;
+      this.searchForm.pageNumber = v;
       this.getDataList();
       this.clearSelectAll();
     },
     changePageSize(v) {
-      this.pageSize = v;
+      this.searchForm.pageSize = v;
       this.getDataList();
     },
     changeSort(e) {
-      this.sortColumn = e.key;
-      this.sortType = e.order;
-      if (e.order === "normal") {
-        this.sortType = "";
+      this.searchForm.sort = e.key;
+      this.searchForm.order = e.order;
+      if (e.order == "normal") {
+        this.searchForm.order = "";
       }
       this.getDataList();
     },
     getDataList() {
       this.loading = true;
-      let params = {
-        pageNumber: this.pageNumber,
-        pageSize: this.pageSize,
-        sort: this.sortColumn,
-        order: this.sortType
-      };
       // 请求后端获取表单数据 请自行修改接口
-      // this.getRequest("请求路径", params).then(res => {
+      // this.getRequest("请求路径", this.searchForm).then(res => {
       //   this.loading = false;
-      //   if (res.success === true) {
+      //   if (res.success) {
       //     this.data = res.result.content;
       //     this.total = res.result.totalElements;
       //   }
@@ -182,7 +199,7 @@ export default {
       this.data = [
         {
           id: "1",
-          name: "X-BOOT",
+          name: "XBoot",
           createTime: "2018-08-08 00:08:00",
           updateTime: "2018-08-08 00:08:00"
         },
@@ -203,12 +220,12 @@ export default {
       this.$refs.form.validate(valid => {
         if (valid) {
           this.submitLoading = true;
-          if (this.modalType === 0) {
+          if (this.modalType == 0) {
             // 添加 避免编辑后传入id等数据 记得删除
             delete this.form.id;
             // this.postRequest("请求地址", this.form).then(res => {
             //   this.submitLoading = false;
-            //   if (res.success === true) {
+            //   if (res.success) {
             //     this.$Message.success("操作成功");
             //     this.getDataList();
             //     this.modalVisible = false;
@@ -223,7 +240,7 @@ export default {
             // 编辑
             // this.postRequest("请求地址", this.form).then(res => {
             //   this.submitLoading = false;
-            //   if (res.success === true) {
+            //   if (res.success) {
             //     this.$Message.success("操作成功");
             //     this.getDataList();
             //     this.modalVisible = false;
@@ -248,9 +265,10 @@ export default {
     edit(v) {
       this.modalType = 1;
       this.modalTitle = "编辑";
+      this.$refs.form.resetFields();
       // 转换null为""
       for (let attr in v) {
-        if (v[attr] === null) {
+        if (v[attr] == null) {
           v[attr] = "";
         }
       }
@@ -264,16 +282,19 @@ export default {
         title: "确认删除",
         // 记得确认修改此处
         content: "您确认要删除 " + v.name + " ?",
+        loading: true,
         onOk: () => {
           // 删除
           // this.deleteRequest("请求地址，如/deleteByIds/" + v.id).then(res => {
-          //   if (res.success === true) {
+          //   this.$Modal.remove();
+          //   if (res.success) {
           //     this.$Message.success("操作成功");
           //     this.getDataList();
           //   }
           // });
           // 模拟请求成功
           this.$Message.success("操作成功");
+          this.$Modal.remove();
           this.getDataList();
         }
       });
@@ -293,6 +314,7 @@ export default {
       this.$Modal.confirm({
         title: "确认删除",
         content: "您确认要删除所选的 " + this.selectCount + " 条数据?",
+        loading: true,
         onOk: () => {
           let ids = "";
           this.selectList.forEach(function(e) {
@@ -301,7 +323,8 @@ export default {
           ids = ids.substring(0, ids.length - 1);
           // 批量删除
           // this.deleteRequest("请求地址，如/deleteByIds/" + ids).then(res => {
-          //   if (res.success === true) {
+          //   this.$Modal.remove();
+          //   if (res.success) {
           //     this.$Message.success("操作成功");
           //     this.clearSelectAll();
           //     this.getDataList();
@@ -309,6 +332,7 @@ export default {
           // });
           // 模拟请求成功
           this.$Message.success("操作成功");
+          this.$Modal.remove();
           this.clearSelectAll();
           this.getDataList();
         }

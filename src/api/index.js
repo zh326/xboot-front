@@ -1,5 +1,5 @@
 // 统一请求路径前缀在libs/axios.js中修改
-import { getRequest, postRequest, putRequest, deleteRequest, uploadFileRequest } from '@/libs/axios';
+import { getRequest, postRequest, putRequest, deleteRequest, getRequestWithNoToken } from '@/libs/axios';
 
 
 
@@ -9,6 +9,8 @@ export const uploadFile = "/xboot/upload/file"
 export const drawCodeImage = "/xboot/common/captcha/draw/"
 // 获取菜单
 export const getMenuList = "/xboot/permission/getMenuList"
+// 获取数据字典
+export const getDictData = "/xboot/dictData/getByType/"
 
 
 
@@ -26,7 +28,7 @@ export const regist = (params) => {
 }
 // 初始化验证码
 export const initCaptcha = (params) => {
-    return getRequest('/common/captcha/init', params)
+    return getRequestWithNoToken('/common/captcha/init', params)
 }
 // 发送短信验证码
 export const sendSms = (mobile, params) => {
@@ -120,6 +122,10 @@ export const disableUser = (id, params) => {
 // 删除用户
 export const deleteUser = (ids, params) => {
     return deleteRequest(`/user/delByIds/${ids}`, params)
+}
+// 重置用户密码
+export const resetUserPass = (params) => {
+    return postRequest('/user/resetPass', params)
 }
 
 
@@ -266,6 +272,41 @@ export const deleteLog = (ids, params) => {
 // 清空日志
 export const deleteAllLog = (params) => {
     return deleteRequest('/log/delAll', params)
+}
+
+
+
+// 分页获取Redis数据
+export const getRedisData = (params) => {
+    return getRequest('/redis/getAllByPage', params)
+}
+// 通过key获取Redis信息
+export const getRedisByKey = (key, params) => {
+    return getRequest(`/redis/getByKey/${key}`, params)
+}
+// 获取Redis键值数量
+export const getRedisKeySize = (params) => {
+    return getRequest('/redis/getKeySize', params)
+}
+// 获取Redis内存
+export const getRedisMemory = (params) => {
+    return getRequest('/redis/getMemory', params)
+}
+// 获取Redis信息
+export const getRedisInfo = (params) => {
+    return getRequest('/redis/info', params)
+}
+// 添加编辑Redis
+export const saveRedis = (params) => {
+    return postRequest('/redis/save', params)
+}
+// 删除Redis
+export const deleteRedis = (params) => {
+    return deleteRequest('/redis/delByKeys', params)
+}
+// 清空Redis
+export const deleteAllRedis = (params) => {
+    return deleteRequest('/redis/delAll', params)
 }
 
 

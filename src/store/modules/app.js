@@ -6,6 +6,11 @@ import Vue from 'vue';
 
 const app = {
     state: {
+        loading: false, // 全局加载动画
+        added: false, // 加载路由标志
+        navList: [], // 顶部菜单
+        currNav: "", // 当前顶部菜单name
+        currNavTitle: "", // 当前顶部菜单标题
         cachePage: [],
         lang: '',
         isFullScreen: false,
@@ -41,9 +46,24 @@ const app = {
             state.routers.push(...routes);
             router.addRoutes(routes);
         },
-        // 动态添加全局路由，不需要缓存
+        // 动态添加全局路由404、500等页面，不需要缓存
         updateDefaultRouter(state, routes) {
             router.addRoutes(routes);
+        },
+        setLoading(state, v) {
+            state.loading = v;
+        },
+        setAdded(state, v) {
+            state.added = v;
+        },
+        setNavList(state, list) {
+            state.navList = list;
+        },
+        setCurrNav(state, v) {
+            state.currNav = v;
+        },
+        setCurrNavTitle(state, v) {
+            state.currNavTitle = v;
         },
         setTagsList(state, list) {
             state.tagsList.push(...list);
@@ -54,7 +74,7 @@ const app = {
         addOpenSubmenu(state, name) {
             let hasThisName = false;
             let isEmpty = false;
-            if (name.length === 0) {
+            if (name.length == 0) {
                 isEmpty = true;
             }
             if (state.openedSubmenuArr.indexOf(name) > -1) {
@@ -66,7 +86,7 @@ const app = {
         },
         closePage(state, name) {
             state.cachePage.forEach((item, index) => {
-                if (item === name) {
+                if (item == name) {
                     state.cachePage.splice(index, 1);
                 }
             });
@@ -78,7 +98,7 @@ const app = {
         },
         removeTag(state, name) {
             state.pageOpenedList.map((item, index) => {
-                if (item.name === name) {
+                if (item.name == name) {
                     state.pageOpenedList.splice(index, 1);
                 }
             });
@@ -103,18 +123,18 @@ const app = {
             let currentName = vm.$route.name;
             let currentIndex = 0;
             state.pageOpenedList.forEach((item, index) => {
-                if (item.name === currentName) {
+                if (item.name == currentName) {
                     currentIndex = index;
                 }
             });
-            if (currentIndex === 0) {
+            if (currentIndex == 0) {
                 state.pageOpenedList.splice(1);
             } else {
                 state.pageOpenedList.splice(currentIndex + 1);
                 state.pageOpenedList.splice(1, currentIndex - 1);
             }
             let newCachepage = state.cachePage.filter(item => {
-                return item === currentName;
+                return item == currentName;
             });
             state.cachePage = newCachepage;
             localStorage.pageOpenedList = JSON.stringify(state.pageOpenedList);
